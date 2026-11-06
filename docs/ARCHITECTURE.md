@@ -1,47 +1,46 @@
-# VyaparMitra architecture (Phase 1)
+# VyaparMitra architecture (Phase 2)
 
 Project name: **VyaparMitra**. Business dates and reminders use **Asia/Kolkata**.
 
 ## System
 
 ```
-Browser (React + Vite, port 5173)
-    │  /api  (dev proxy)
+Browser (React + Vite)
+    │  /api
     ▼
-Flask (127.0.0.1:5000)
-    ├── config.py          environment
-    ├── security.py        size limit, headers
-    ├── errors.py          JSON errors
-    ├── logging_setup.py   app / error / debug logs
-    ├── db.py              SQLite + atomic_connection
-    ├── timeutil.py        Asia/Kolkata
-    └── routes             Phase 1: GET /api/health only
+Flask
+    ├── routes/           HTTP + validation
+    ├── services/         products, stock, sales, analytics
+    ├── db.py             SQLite, migrations, atomic_connection
+    ├── migrations/       001_foundation, 002_inventory
+    └── gnani/            unused (Phase 4+)
 ```
 
-Gnani Prisma / Timbre / Evon are **not** integrated. The backend will be the only process that talks to Gnani later. Credit usage will be measured from real responses, not assumed.
+Gnani is not integrated. The backend is the source of truth for stock and sales totals. The UI must not compute business totals.
 
-## Component responsibilities
+## Schema (SQLite)
 
-| Layer | Role |
-| --- | --- |
-| Frontend | UI, loading/error states, no business totals, no secrets |
-| Flask routes | HTTP, validation (later), status codes |
-| Services (later) | Sales, stock, intent — not in Phase 1 |
-| `db.py` | Connections, WAL, foreign keys, transactions |
-| Gnani clients (later) | Timeouts, auth failures, no fake success |
+- `schema_migrations` — versioned `.sql` files; do not delete the DB to change schema
+- `app_meta`
+- `products` — unique `normalized_name`, `current_stock >= 0`
+- `product_aliases` — unique `normalized_alias`
+- `stock_movements` — `opening | purchase | sale | adjustment`; sale quantities are negative deltas
+- `sales` — unique `idempotency_key`, `transaction_date` as `YYYY-MM-DD` in Asia/Kolkata
+- `sale_items`
 
-## Data flow (Phase 1)
+Foreign keys are on. Write paths use `BEGIN IMMEDIATE` so concurrent sales serialize. Stock updates are `UPDATE ... WHERE current_stock + delta >= 0`.
 
-1. UI calls `GET /api/health`.
-2. Flask checks SQLite with a parameterized `SELECT 1`.
-3. Response includes timezone and Gnani `not_started`.
+**Money and quantity:** JSON still uses rupees and unit quantities. SQLite stores **integer paise** (₹1 = 100) and **integer micro-units** (1 kg = 1_000_000). Conversion uses `decimal.Decimal` with ROUND_HALF_UP. See `backend/money.py`.
 
-Stock and balances will use `atomic_connection` so failed sales do not leave partial updates.
+## Data flow (sale)
 
-## Schema
-
-Phase 1 only: `app_meta(key, value)`. Products, aliases, stock_movements, sales, sale_items, reminders, and alerts are Phase 2.
+1. Validate items (qty > 0, prices ≥ 0).
+2. If `idempotency_key` exists, return the original sale.
+3. Check stock for every line.
+4. Insert `sales` + `sale_items`.
+5. Decrement `products.current_stock` and insert `stock_movements` (`sale`).
+6. Commit.
 
 ## Single-shop MVP
 
-One local shop, no auth. Future tables should include shop identity so multi-owner isolation is possible without a rewrite.
+No auth. Future shop_id should be added before multi-tenant deploy.

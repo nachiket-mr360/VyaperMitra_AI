@@ -36,7 +36,7 @@ function App() {
         </p>
         <h1 className="mt-1 text-3xl font-semibold">VyaparMitra</h1>
         <p className="mt-2 text-lg text-stone-700">
-          Phase 1 setup. Voice and Gnani AI are not connected yet.
+          Phase 2: inventory and sales APIs. Voice and Gnani AI are not connected yet.
         </p>
       </header>
 

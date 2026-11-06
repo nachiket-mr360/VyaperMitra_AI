@@ -11,11 +11,12 @@ from config import Config, require_secure_secret
 from db import get_connection, init_db
 from errors import register_error_handlers
 from logging_setup import setup_logging
+from routes import register_blueprints
 from security import apply_security
 from timeutil import now_business
 
 APP_NAME = "VyaparMitra"
-APP_PHASE = 1
+APP_PHASE = 2
 
 logger = logging.getLogger("vyaparmitra")
 
@@ -28,6 +29,7 @@ def create_app() -> Flask:
     CORS(app, origins=Config.CORS_ORIGINS)
     apply_security(app)
     register_error_handlers(app)
+    register_blueprints(app)
     init_db()
     logger.info("VyaparMitra starting phase=%s tz=%s", APP_PHASE, Config.BUSINESS_TIMEZONE)
 

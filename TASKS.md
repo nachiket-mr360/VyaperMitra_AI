@@ -1,44 +1,38 @@
 # VyaparMitra task list
 
-Project name is **VyaparMitra** everywhere. Timezone: **Asia/Kolkata**. Stock updates will be atomic SQLite transactions (Phase 2+). Gnani credits: **not assumed**; unused until real API calls.
+Project name is **VyaparMitra** everywhere. Timezone: **Asia/Kolkata**. Stock updates use atomic SQLite transactions. Gnani credits: **not assumed**.
 
 ## Completed — Phase 1
 
-- [x] Initial folder structure
-- [x] Flask backend with SQLite connection and WAL-ready helper
-- [x] Environment files (`.env.example`, `backend/.env` placeholders)
-- [x] `GET /api/health`
-- [x] React + TypeScript + Vite + Tailwind frontend
-- [x] Frontend health fetch via Vite proxy
-- [x] Central logging (`backend/logs/`, gitignored `*.log`)
-- [x] JSON error handlers (no stack traces to clients)
-- [x] CORS allowlist, request size limit, security headers
-- [x] README, ARCHITECTURE, API, SECURITY, TROUBLESHOOTING, TASKS, BUGS
-- [x] Comprehensive `.gitignore`
-- [x] Backend pytest for health, 404 JSON, headers
+- [x] Project setup, health API, logging, security headers, docs, Git hygiene
 
-## Pending — Phase 2+ (not started until Phase 1 review is accepted)
+## Completed — Phase 2
 
-- [ ] Relational schema (products, aliases, stock_movements, sales, sale_items, reminders, alerts)
-- [ ] Product and inventory APIs
-- [ ] Sales APIs (no purchase-cost prompt on sale)
+- [x] Versioned SQLite migrations (`001`, `002`)
+- [x] products, product_aliases, stock_movements, sales, sale_items
+- [x] Product CRUD, deactivate, aliases, low-stock threshold
+- [x] Opening / purchase / adjustment stock APIs
+- [x] Sales with multi-item, stock decrement, idempotency
+- [x] Analytics endpoints (today, date, summary, by-product, stock, low-stock)
+- [x] Isolated pytest DB (17 tests)
+
+## Pending — Phase 3+ (not started)
+
+- [ ] Intent processing / voice command mapping
 - [ ] Gnani Prisma STT (real API only)
-- [ ] Intent processing
 - [ ] Gnani Timbre TTS (real API only)
-- [ ] Evon only if an official API exists
-- [ ] Analytics APIs and dashboard charts
+- [ ] Analytics dashboard UI
 - [ ] Reminders, briefing, notifications
-- [ ] Multilingual UX (after verifying Gnani language support in docs)
 - [ ] CSV / Excel / PDF export
-- [ ] Wake-word, customer credit, expenses (after core MVP)
 - [ ] Authentication before public deploy
 
 ## Blocked
 
-- None for Phase 1.
+- None.
 
 ## Explicitly not done
 
 - No Gnani calls
-- No placeholder / fake AI transcripts or audio
-- No multi-shop auth (documented single-shop MVP)
+- No placeholder / fake AI
+- No profit calculation
+- No full analytics frontend

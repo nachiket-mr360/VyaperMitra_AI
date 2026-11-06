@@ -1,7 +1,10 @@
 # Bugs
 
-No open bugs for Phase 1.
+No open defects from Phase 2 tests.
 
-| ID | Description | Steps | Expected | Actual | Status | Fix |
-| --- | --- | --- | --- | --- | --- | --- |
-| — | — | — | — | — | — | — |
+## Known limitations (not bugs)
+
+- No authentication on mutating APIs.
+- Opening stock is allowed only once per product.
+- `payment_status` is stored but not used to imply cash received.
+- Analytics UI is not built yet.
