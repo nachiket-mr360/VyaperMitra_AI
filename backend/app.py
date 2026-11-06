@@ -7,7 +7,7 @@ import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
 
-from config import Config
+from config import Config, require_secure_secret
 from db import get_connection, init_db
 from errors import register_error_handlers
 from logging_setup import setup_logging
@@ -22,6 +22,7 @@ logger = logging.getLogger("vyaparmitra")
 
 def create_app() -> Flask:
     setup_logging()
+    require_secure_secret(Config.SECRET_KEY)
     app = Flask(__name__)
     app.config.from_object(Config)
     CORS(app, origins=Config.CORS_ORIGINS)

@@ -14,11 +14,32 @@ load_dotenv(PROJECT_ROOT / ".env")
 load_dotenv(BACKEND_DIR / ".env")
 
 
+INSECURE_SECRET_KEYS = frozenset(
+    {"", "dev-only-change-me", "changeme", "secret", "secret_key"}
+)
+
+
 def _bool(name: str, default: bool = False) -> bool:
     raw = os.getenv(name)
     if raw is None:
         return default
     return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def production_mode() -> bool:
+    env = (os.getenv("FLASK_ENV") or "").strip().lower()
+    if env == "production":
+        return True
+    if env == "development":
+        return False
+    return not _bool("FLASK_DEBUG", True)
+
+
+def require_secure_secret(secret: str) -> None:
+    if production_mode() and secret.strip().lower() in INSECURE_SECRET_KEYS:
+        raise RuntimeError(
+            "Refusing to start: set a strong SECRET_KEY; insecure defaults are not allowed in production."
+        )
 
 
 class Config:
