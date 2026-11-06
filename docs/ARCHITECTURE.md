@@ -18,6 +18,17 @@ Flask
 
 Gnani is not integrated. The backend is the source of truth for stock and sales totals. The UI must not compute business totals.
 
+## Frontend / backend boundary (mandatory)
+
+VyaparMitra is a **Python + Flask** application. React + TypeScript + Vite is the UI only.
+
+| Layer | Allowed | Forbidden |
+| --- | --- | --- |
+| Flask | Business logic, SQLite, inventory, sales, analytics, reminders, validation, Gnani Prisma/Timbre | None of this in the browser |
+| React | Screens, forms, charts, calling `/api` | SQLite, Gnani keys/HTTP, stock/sale/profit math, schema |
+
+Vite’s `/api` proxy is development-only; it still terminates on Flask. Do not convert the stack or move logic into the frontend.
+
 ## Schema (SQLite)
 
 - `schema_migrations` — versioned `.sql` files; do not delete the DB to change schema
