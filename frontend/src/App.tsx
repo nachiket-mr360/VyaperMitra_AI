@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchHealth, type HealthResponse } from './api/health'
+import { VoicePanel } from './components/VoicePanel'
 
 function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
@@ -36,7 +37,7 @@ function App() {
         </p>
         <h1 className="mt-1 text-3xl font-semibold">VyaparMitra</h1>
         <p className="mt-2 text-lg text-stone-700">
-          Phase 2: inventory and sales APIs. Voice and Gnani AI are not connected yet.
+          Phase 3: Prisma speech-to-text. Sales from voice are not enabled yet.
         </p>
       </header>
 
@@ -88,6 +89,8 @@ function App() {
           Check again
         </button>
       </section>
+
+      <VoicePanel />
     </main>
   )
 }

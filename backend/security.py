@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from flask import Flask
 
+from config import Config
+
 
 def apply_security(app: Flask) -> None:
-    # Voice audio will raise this later; 1 MiB is enough for JSON in Phase 1.
-    app.config.setdefault("MAX_CONTENT_LENGTH", 1 * 1024 * 1024)
+    # Voice clips up to ~30s; JSON APIs stay small within this cap.
+    app.config.setdefault("MAX_CONTENT_LENGTH", Config.GNANI_STT_MAX_BYTES + 64 * 1024)
 
     @app.after_request
     def security_headers(response):

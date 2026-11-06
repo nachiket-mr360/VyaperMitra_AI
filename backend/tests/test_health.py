@@ -9,10 +9,10 @@ def test_health_ok(client):
     assert response.status_code == 200
     assert data["ok"] is True
     assert data["app"] == "VyaparMitra"
-    assert data["phase"] == 2
+    assert data["phase"] == 3
     assert data["timezone"] == "Asia/Kolkata"
     assert data["database"]["connected"] is True
-    assert data["gnani"]["integration"] == "not_started"
+    assert data["gnani"]["integration"] == "prisma_stt"
     assert "GNANI_API_KEY" not in str(data)
 
 

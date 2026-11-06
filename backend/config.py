@@ -65,3 +65,8 @@ class Config:
     GNANI_ENABLED = _bool("GNANI_ENABLED", False)
     GNANI_PRISMA_VERSION = os.getenv("GNANI_PRISMA_VERSION", "3.0")
     GNANI_TIMBRE_VERSION = os.getenv("GNANI_TIMBRE_VERSION", "3.0")
+    GNANI_STT_URL = os.getenv("GNANI_STT_URL", "https://api.vachana.ai/stt/v3")
+    GNANI_STT_MODEL = os.getenv("GNANI_STT_MODEL", "prisma-v3.0")
+    GNANI_STT_TIMEOUT = int(os.getenv("GNANI_STT_TIMEOUT", "60"))
+    GNANI_STT_MAX_BYTES = int(os.getenv("GNANI_STT_MAX_BYTES", str(5 * 1024 * 1024)))
+    GNANI_STT_MAX_SECONDS = float(os.getenv("GNANI_STT_MAX_SECONDS", "30"))

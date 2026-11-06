@@ -11,7 +11,7 @@
 - Product PATCH cannot set `current_stock` or other protected fields.
 - Errors: clients get generic JSON; details go to rotating logs under `backend/logs/` (gitignored).
 - Logs redact lines that mention `api_key`, `password`, `token`, `secret`, `authorization`.
-- Gnani keys stay on the backend. React never receives them.
+- Gnani keys stay on the backend (`X-API-Key-ID` from env). React never receives them and never calls `api.vachana.ai`. Recordings are not stored; temp validation is in-memory.
 
 ## Environment variables
 

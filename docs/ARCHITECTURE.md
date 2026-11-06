@@ -13,10 +13,10 @@ Flask
     ├── services/         products, stock, sales, analytics
     ├── db.py             SQLite, migrations, atomic_connection
     ├── migrations/       001_foundation, 002_inventory
-    └── gnani/            unused (Phase 4+)
+    └── gnani/            Prisma V3 STT (Timbre not started)
 ```
 
-Gnani is not integrated. The backend is the source of truth for stock and sales totals. The UI must not compute business totals.
+Gnani Prisma V3 STT is called only from Flask (`backend/gnani/stt.py`). The React UI records WAV PCM and posts it to `/api/voice/transcribe`. The browser does not run speech recognition. Transcripts are not applied to sales in Phase 3. The backend remains the source of truth for stock and sales totals.
 
 ## Frontend / backend boundary (mandatory)
 

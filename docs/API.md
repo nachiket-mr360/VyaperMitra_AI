@@ -1,4 +1,4 @@
-# VyaparMitra API (Phase 2)
+# VyaparMitra API (Phase 3)
 
 Base URL (local): `http://127.0.0.1:5000`
 
@@ -24,7 +24,37 @@ HTTP: `400` validation, `404` missing, `409` conflict/stock, `413` too large, `5
 
 ## `GET /api/health`
 
-Same as Phase 1. `phase` is `2`. Gnani remains `not_started`.
+`phase` is `3`. `gnani.integration` is `prisma_stt`. The API key is never returned.
+
+---
+
+## `POST /api/voice/transcribe`
+
+`multipart/form-data`
+
+- `audio`: WAV, MP3, OGG, FLAC, AAC, or M4A, max 30 seconds
+- `language`: `auto` (sent as `indic-auto`), `kn-IN`, `hi-IN`, `en-IN`, `mr-IN`
+
+Success:
+
+```json
+{
+  "ok": true,
+  "success": true,
+  "transcript": "hello",
+  "detected_language": "en-IN",
+  "model": "prisma-v3.0",
+  "request_id": "...",
+  "processing_time": 0.62,
+  "language_sent": "en-IN"
+}
+```
+
+Flask calls `POST https://api.vachana.ai/stt/v3` with `X-API-Key-ID`. React never talks to Gnani.
+
+Errors: `missing_audio`, `empty_audio`, `unsupported_format`, `invalid_mime`, `audio_too_long`, `gnani_not_configured` (503), `gnani_unauthorized` (401), `gnani_credits` (402), `gnani_rate_limited` (429), `gnani_timeout` (504), `gnani_unavailable` / `malformed_upstream` (502), `empty_transcript` (422).
+
+No fake success if Gnani fails.
 
 ---
 

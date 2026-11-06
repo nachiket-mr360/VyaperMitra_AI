@@ -34,6 +34,14 @@ gnani_credentials*
 *.bak
 backend/uploads/
 backend/generated_audio/
+*.wav
+*.mp3
+*.ogg
+*.flac
+*.aac
+*.m4a
+*.webm
+!backend/tests/**
 tmp/
 temp/
 *.tmp

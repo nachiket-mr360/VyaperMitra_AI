@@ -8,18 +8,18 @@ Project name is **VyaparMitra** everywhere. Timezone: **Asia/Kolkata**. Stock up
 
 ## Completed — Phase 2
 
-- [x] Versioned SQLite migrations (`001`, `002`)
-- [x] products, product_aliases, stock_movements, sales, sale_items
-- [x] Product CRUD, deactivate, aliases, low-stock threshold
-- [x] Opening / purchase / adjustment stock APIs
-- [x] Sales with multi-item, stock decrement, idempotency
-- [x] Analytics endpoints (today, date, summary, by-product, stock, low-stock)
-- [x] Isolated pytest DB (17 tests)
+- [x] Inventory and sales APIs, integer money, idempotency audit
 
-## Pending — Phase 3+ (not started)
+## Completed — Phase 3
+
+- [x] Flask Gnani Prisma V3 STT (`POST /api/voice/transcribe`)
+- [x] Audio validation (magic bytes, 30s, documented formats)
+- [x] React microphone capture as WAV (no browser SpeechRecognition)
+- [x] Mocked STT error-path tests
+
+## Pending — Phase 4+ (not started)
 
 - [ ] Intent processing / voice command mapping
-- [ ] Gnani Prisma STT (real API only)
 - [ ] Gnani Timbre TTS (real API only)
 - [ ] Analytics dashboard UI
 - [ ] Reminders, briefing, notifications
@@ -28,11 +28,11 @@ Project name is **VyaparMitra** everywhere. Timezone: **Asia/Kolkata**. Stock up
 
 ## Blocked
 
-- None.
+- Live Gnani transcription requires a configured `GNANI_API_KEY` and a spoken clip.
 
 ## Explicitly not done
 
-- No Gnani calls
-- No placeholder / fake AI
+- No Timbre TTS
+- No sales/stock from transcripts
+- No fake STT
 - No profit calculation
-- No full analytics frontend

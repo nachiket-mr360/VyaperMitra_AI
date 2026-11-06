@@ -15,6 +15,24 @@ export class ApiClientError extends Error {
   }
 }
 
+function parseError(res: Response, body: unknown): ApiClientError {
+  const err = body as ApiErrorBody | null
+  return new ApiClientError(
+    err?.error?.message ?? `Request failed (${res.status})`,
+    res.status,
+    err?.error?.code ?? 'http_error',
+  )
+}
+
+async function parseJson(res: Response): Promise<unknown> {
+  const text = await res.text()
+  try {
+    return text ? JSON.parse(text) : null
+  } catch {
+    throw new ApiClientError('The server returned an unexpected response.', res.status, 'invalid_json')
+  }
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   let res: Response
   try {
@@ -26,23 +44,27 @@ export async function apiGet<T>(path: string): Promise<T> {
       'network_error',
     )
   }
-
-  const text = await res.text()
-  let body: unknown = null
-  try {
-    body = text ? JSON.parse(text) : null
-  } catch {
-    throw new ApiClientError('The server returned an unexpected response.', res.status, 'invalid_json')
-  }
-
+  const body = await parseJson(res)
   if (!res.ok) {
-    const err = body as ApiErrorBody | null
+    throw parseError(res, body)
+  }
+  return body as T
+}
+
+export async function apiPostForm<T>(path: string, form: FormData): Promise<T> {
+  let res: Response
+  try {
+    res = await fetch(path, { method: 'POST', body: form })
+  } catch {
     throw new ApiClientError(
-      err?.error?.message ?? `Request failed (${res.status})`,
-      res.status,
-      err?.error?.code ?? 'http_error',
+      'Cannot reach the VyaparMitra server. Check that the backend is running.',
+      0,
+      'network_error',
     )
   }
-
+  const body = await parseJson(res)
+  if (!res.ok) {
+    throw parseError(res, body)
+  }
   return body as T
 }

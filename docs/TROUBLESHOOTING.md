@@ -32,9 +32,21 @@
 
 ## Gnani / speech not working
 
-**Cause:** Phase 1 does not call Gnani. Empty `GNANI_API_KEY` is expected.
+**Cause:** Empty `GNANI_API_KEY`, wrong key, credits, or network to `api.vachana.ai`.
 
-**Fix:** Do not add fake STT/TTS. Real Prisma/Timbre comes in later phases.
+**Fix:** Set `GNANI_API_KEY` in `backend/.env` (never commit it). Restart Flask. Health shows `configured: true` without revealing the key. Do not fake transcripts.
+
+## Microphone permission denied
+
+**Cause:** Browser blocked getUserMedia.
+
+**Fix:** Allow microphone for localhost. Use HTTPS or localhost.
+
+## Unsupported audio format
+
+**Cause:** File is not WAV/MP3/OGG/FLAC/AAC/M4A, or longer than 30 seconds.
+
+**Fix:** Use the in-app recorder (WAV) or a short clip in a documented format.
 
 ## `npm run build` fails
 
