@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.eggs/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+gnani_credentials*
+
+# Databases and local data
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.bak
+backend/uploads/
+backend/generated_audio/
+tmp/
+temp/
+*.tmp
+
+# Logs (keep directory via .gitkeep)
+*.log
+logs/*
+!logs/.gitkeep
+backend/logs/*
+!backend/logs/.gitkeep
+
+# Frontend
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+*.local
+
+# OS / editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+
+# Test / cache
+.coverage
+htmlcov/
+.cache/
