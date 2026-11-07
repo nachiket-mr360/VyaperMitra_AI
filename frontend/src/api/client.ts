@@ -51,6 +51,28 @@ export async function apiGet<T>(path: string): Promise<T> {
   return body as T
 }
 
+export async function apiPostJson<T>(path: string, body: unknown): Promise<T> {
+  let res: Response
+  try {
+    res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiClientError(
+      'Cannot reach the VyaparMitra server. Check that the backend is running.',
+      0,
+      'network_error',
+    )
+  }
+  const parsed = await parseJson(res)
+  if (!res.ok) {
+    throw parseError(res, parsed)
+  }
+  return parsed as T
+}
+
 export async function apiPostForm<T>(path: string, form: FormData): Promise<T> {
   let res: Response
   try {

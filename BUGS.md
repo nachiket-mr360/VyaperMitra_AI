@@ -1,6 +1,6 @@
 # Bugs
 
-No open defects from Phase 3 mocked tests.
+No open defects from Phase 4 automated tests at last run.
 
 ## Known limitations (not bugs)
 

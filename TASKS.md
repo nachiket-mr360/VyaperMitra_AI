@@ -17,9 +17,18 @@ Project name is **VyaparMitra** everywhere. Timezone: **Asia/Kolkata**. Stock up
 - [x] React microphone capture as WAV (no browser SpeechRecognition)
 - [x] Mocked STT error-path tests
 
-## Pending — Phase 4+ (not started)
+## Completed — Phase 4
 
-- [ ] Intent processing / voice command mapping
+- [x] Rule-based intents: purchase, sale, stock check
+- [x] Confirmation, cancel, pending supersede
+- [x] Alias matching; reuse stock/sales services
+
+## Completed — Phase 5 (started)
+
+- [x] Dashboard API + shopkeeper UI (sales, stock, trends)
+
+## Pending — later
+
 - [ ] Gnani Timbre TTS (real API only)
 - [ ] Analytics dashboard UI
 - [ ] Reminders, briefing, notifications
@@ -33,6 +42,7 @@ Project name is **VyaparMitra** everywhere. Timezone: **Asia/Kolkata**. Stock up
 ## Explicitly not done
 
 - No Timbre TTS
-- No sales/stock from transcripts
+- No Timbre / LLM Evon
+- Parser is keyword-based, not full NLU
 - No fake STT
 - No profit calculation

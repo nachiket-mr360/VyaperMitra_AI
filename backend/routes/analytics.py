@@ -15,6 +15,18 @@ def sales_today():
     return jsonify({"ok": True, **analytics_service.sales_today()})
 
 
+@bp.get("/api/analytics/sales/yesterday")
+def sales_yesterday():
+    return jsonify({"ok": True, **analytics_service.sales_yesterday()})
+
+
+@bp.get("/api/analytics/dashboard")
+def dashboard():
+    start = request.args.get("from")
+    end = request.args.get("to")
+    return jsonify({"ok": True, **analytics_service.dashboard(start, end)})
+
+
 @bp.get("/api/analytics/sales")
 def sales_on_date():
     day = request.args.get("date")

@@ -16,7 +16,7 @@ from security import apply_security
 from timeutil import now_business
 
 APP_NAME = "VyaparMitra"
-APP_PHASE = 3
+APP_PHASE = 5
 
 logger = logging.getLogger("vyaparmitra")
 
@@ -54,12 +54,13 @@ def create_app() -> Flask:
             "server_time": now.isoformat(),
             "database": {
                 "connected": db_ok,
+                "demo": Config.DEMO_MODE,
             },
             "gnani": {
                 "enabled": Config.GNANI_ENABLED,
                 "configured": bool(Config.GNANI_API_KEY),
                 "integration": "prisma_stt",
-                "note": "Prisma V3 STT via Flask. Timbre TTS not started. No fake transcripts.",
+                "note": "Prisma STT + rule intents. Dashboard uses SQLite sales. Timbre/Evon not started.",
             },
         }
         return jsonify(payload), 200 if db_ok else 503

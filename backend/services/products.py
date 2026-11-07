@@ -37,6 +37,8 @@ def create_product(
     low_stock_threshold: Any = 0,
     opening_stock: Any | None = None,
     opening_unit_cost: Any | None = None,
+    *,
+    conn: sqlite3.Connection | None = None,
 ) -> dict[str, Any]:
     normalized = normalize_text(name)
     unit_n = require_unit(unit)
@@ -44,7 +46,8 @@ def create_product(
     if threshold_micro < 0:
         raise ApiError("low_stock_threshold cannot be negative", 400, "invalid_value")
     now = _now()
-    with atomic_connection() as conn:
+
+    def _run(conn: sqlite3.Connection) -> dict[str, Any]:
         exists = conn.execute(
             "SELECT id FROM products WHERE normalized_name = ?", (normalized,)
         ).fetchone()
@@ -87,6 +90,11 @@ def create_product(
             )
         row = get_product(conn, product_id)
         return product_dict(row)
+
+    if conn is not None:
+        return _run(conn)
+    with atomic_connection() as owned:
+        return _run(owned)
 
 
 def list_products(*, include_inactive: bool = False) -> list[dict[str, Any]]:

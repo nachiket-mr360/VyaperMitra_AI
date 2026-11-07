@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiClientError } from '../api/client'
+import { cancelIntent, confirmIntent, parseIntent, type IntentParseResponse } from '../api/intent'
 import { transcribeAudio } from '../api/voice'
 import { encodeWav } from '../audio/wav'
 
@@ -28,6 +29,8 @@ export function VoicePanel() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<Result | null>(null)
+  const [intent, setIntent] = useState<IntentParseResponse | null>(null)
+  const [actionMsg, setActionMsg] = useState<string | null>(null)
   const recRef = useRef<{
     stop: () => Promise<Blob>
   } | null>(null)
@@ -43,6 +46,8 @@ export function VoicePanel() {
   async function startRecording() {
     setError(null)
     setResult(null)
+    setIntent(null)
+    setActionMsg(null)
     if (!navigator.mediaDevices?.getUserMedia) {
       setError('This browser cannot record audio.')
       return
@@ -133,6 +138,8 @@ export function VoicePanel() {
         request_id: data.request_id,
         processing_time: data.processing_time,
       })
+      const parsed = await parseIntent(data.transcript)
+      setIntent(parsed)
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message)
@@ -149,8 +156,7 @@ export function VoicePanel() {
     <section className="rounded-2xl border border-stone-300 bg-white p-5 shadow-sm">
       <h2 className="text-xl font-medium">Voice (Prisma STT)</h2>
       <p className="mt-2 text-stone-700">
-        Recording uses the microphone only. Speech-to-text runs on the Flask server via Gnani Prisma
-        V3. Transcripts are not used for sales yet.
+        Speech-to-text runs on Flask via Prisma V3. Purchase and sale run only after you confirm.
       </p>
 
       <label className="mt-4 block text-lg">
@@ -230,6 +236,88 @@ export function VoicePanel() {
             <dd>{result.processing_time}s</dd>
           </div>
         </dl>
+      )}
+      {intent && (
+        <div className="mt-4 grid gap-2 text-lg">
+          <p>
+            <span className="text-stone-500">Intent</span> {intent.intent}
+          </p>
+          <p>
+            <span className="text-stone-500">Product</span> {intent.product_query ?? '—'}
+          </p>
+          <p>
+            <span className="text-stone-500">Quantity</span>{' '}
+            {intent.quantity ?? '—'} {intent.unit ?? ''}
+          </p>
+          <p>
+            <span className="text-stone-500">Amount</span>{' '}
+            {intent.sale_amount != null ? `${intent.sale_amount} INR` : '—'}
+          </p>
+          {intent.missing.length > 0 && (
+            <p className="text-red-800" role="alert">
+              Missing: {intent.missing.join(', ')}
+            </p>
+          )}
+          {intent.error_code && (
+            <p className="text-red-800" role="alert">
+              {intent.message}
+            </p>
+          )}
+          {!intent.error_code && <p>{intent.message}</p>}
+          {intent.executed && intent.result != null && (
+            <pre className="overflow-auto rounded-lg bg-stone-100 p-3 text-base">
+              {JSON.stringify(intent.result, null, 2)}
+            </pre>
+          )}
+          {intent.needs_confirmation && intent.pending_id && (
+            <div className="mt-2 flex flex-col gap-2">
+              <button
+                type="button"
+                className="min-h-14 w-full rounded-xl bg-amber-700 text-lg font-medium text-white"
+                disabled={busy}
+                onClick={() => {
+                  void (async () => {
+                    setBusy(true)
+                    setError(null)
+                    try {
+                      const done = await confirmIntent(intent.pending_id as string)
+                      setActionMsg(done.message)
+                      setIntent({ ...intent, needs_confirmation: false, executed: true, result: done.result })
+                    } catch (err) {
+                      setError(err instanceof ApiClientError ? err.message : 'Confirm failed.')
+                    } finally {
+                      setBusy(false)
+                    }
+                  })()
+                }}
+              >
+                Confirm
+              </button>
+              <button
+                type="button"
+                className="min-h-14 w-full rounded-xl border border-stone-400 text-lg"
+                disabled={busy}
+                onClick={() => {
+                  void (async () => {
+                    setBusy(true)
+                    try {
+                      const done = await cancelIntent(intent.pending_id as string)
+                      setActionMsg(done.message)
+                      setIntent({ ...intent, needs_confirmation: false })
+                    } catch (err) {
+                      setError(err instanceof ApiClientError ? err.message : 'Cancel failed.')
+                    } finally {
+                      setBusy(false)
+                    }
+                  })()
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          {actionMsg && <p className="font-medium">{actionMsg}</p>}
+        </div>
       )}
     </section>
   )

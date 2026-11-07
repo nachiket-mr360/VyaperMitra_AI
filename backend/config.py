@@ -49,9 +49,29 @@ class Config:
     DEBUG = _bool("FLASK_DEBUG", True)
 
     BUSINESS_TIMEZONE = os.getenv("BUSINESS_TIMEZONE", "Asia/Kolkata")
+    DEMO_MODE = _bool("VYAPARMITRA_DEMO", False)
 
-    _db = os.getenv("DATABASE_PATH", "vyaparmitra.db")
+    _db_env = os.getenv("DATABASE_PATH")
+    if DEMO_MODE:
+        # Never use the live shop file, even if .env sets DATABASE_PATH=vyaparmitra.db
+        if (
+            _db_env
+            and "demo" in Path(_db_env).stem.lower()
+            and Path(_db_env).name.lower() != "vyaparmitra.db"
+        ):
+            _db = _db_env
+        else:
+            _db = "vyaparmitra_demo.db"
+    else:
+        _db = _db_env or "vyaparmitra.db"
     DATABASE_PATH = str(Path(_db) if Path(_db).is_absolute() else BACKEND_DIR / _db)
+    if DEMO_MODE and (
+        "demo" not in Path(DATABASE_PATH).stem.lower()
+        or Path(DATABASE_PATH).name.lower() == "vyaparmitra.db"
+    ):
+        raise RuntimeError(
+            "VYAPARMITRA_DEMO=1 refuses the shop database. Use a file whose name contains 'demo'."
+        )
 
     CORS_ORIGINS = [
         o.strip()
@@ -70,3 +90,4 @@ class Config:
     GNANI_STT_TIMEOUT = int(os.getenv("GNANI_STT_TIMEOUT", "60"))
     GNANI_STT_MAX_BYTES = int(os.getenv("GNANI_STT_MAX_BYTES", str(5 * 1024 * 1024)))
     GNANI_STT_MAX_SECONDS = float(os.getenv("GNANI_STT_MAX_SECONDS", "30"))
+    INTENT_PENDING_TTL_SECONDS = int(os.getenv("INTENT_PENDING_TTL_SECONDS", "900"))

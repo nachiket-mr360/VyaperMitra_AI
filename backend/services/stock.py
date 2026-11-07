@@ -91,20 +91,33 @@ def record_opening(product_id: int, quantity: Any, unit_cost: Any, notes: str | 
         )
 
 
-def record_purchase(product_id: int, quantity: Any, unit_cost: Any, notes: str | None) -> dict:
+def record_purchase(
+    product_id: int,
+    quantity: Any,
+    unit_cost: Any,
+    notes: str | None,
+    *,
+    conn: sqlite3.Connection | None = None,
+) -> dict:
     micro = units_to_micro(quantity, "quantity")
     if micro <= 0:
         raise ApiError("quantity must be greater than 0", 400, "invalid_value")
     cost = rupees_to_paise(unit_cost, "unit_cost") if unit_cost is not None else None
-    with atomic_connection() as conn:
+
+    def _run(c: sqlite3.Connection) -> dict:
         return apply_stock_change(
-            conn,
+            c,
             product_id,
             movement_type="purchase",
             delta_micro=micro,
             unit_cost_paise=cost,
             notes=notes,
         )
+
+    if conn is not None:
+        return _run(conn)
+    with atomic_connection() as owned:
+        return _run(owned)
 
 
 def record_adjustment(product_id: int, quantity: Any, notes: str | None) -> dict:

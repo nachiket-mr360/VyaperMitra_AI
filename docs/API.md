@@ -1,4 +1,4 @@
-# VyaparMitra API (Phase 3)
+# VyaparMitra API (Phase 5)
 
 Base URL (local): `http://127.0.0.1:5000`
 
@@ -24,7 +24,39 @@ HTTP: `400` validation, `404` missing, `409` conflict/stock, `413` too large, `5
 
 ## `GET /api/health`
 
-`phase` is `3`. `gnani.integration` is `prisma_stt`. The API key is never returned.
+`phase` is `5`. `gnani.integration` is `prisma_stt`. Intents use a rule parser, not an LLM. Dashboard numbers come from SQLite. The API key is never returned.
+
+### `GET /api/analytics/dashboard?from=YYYY-MM-DD&to=YYYY-MM-DD`
+
+Flask totals: today, yesterday, period sales and bill count, daily trend, best sellers, inventory, low stock. Amounts are **recorded sales**, not cash received. Profit is not included.
+
+Also: `GET /api/analytics/sales/yesterday`.
+
+---
+
+## Voice intents
+
+Prisma STT only returns text. Flask maps text with a **rule-based** parser (`intents/parser.py`). No Gnani Evon/LLM call is made.
+
+### `POST /api/intents/parse`
+
+```json
+{ "transcript": "I purchased 100 kg of rice" }
+```
+
+Returns `intent` (`purchase_stock` | `record_sale` | `check_stock` | `unknown`), slots, `missing`, `needs_confirmation`, `pending_id` for mutations. Stock queries execute immediately. Purchase/sale never write until confirm.
+
+### `POST /api/intents/confirm`
+
+```json
+{ "pending_id": "uuid" }
+```
+
+Runs existing stock purchase or sale APIs. Repeat confirm replays the same result (`replayed: true`). Sales use `idempotency_key=voice:<pending_id>` and `payment_status=unknown`.
+
+### `POST /api/intents/cancel`
+
+Marks the pending action cancelled. Stock is unchanged. A new parse supersedes older pending actions.
 
 ---
 

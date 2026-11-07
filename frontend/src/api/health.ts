@@ -8,6 +8,7 @@ export type HealthResponse = {
   server_time: string
   database: {
     connected: boolean
+    demo?: boolean
   }
   gnani: {
     enabled: boolean

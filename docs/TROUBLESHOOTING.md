@@ -36,6 +36,12 @@
 
 **Fix:** Set `GNANI_API_KEY` in `backend/.env` (never commit it). Restart Flask. Health shows `configured: true` without revealing the key. Do not fake transcripts.
 
+## Voice command did nothing
+
+**Cause:** Transcript did not match purchase/sale/stock phrases, or a slot was missing.
+
+**Fix:** Speak quantity, unit, and product. For sales, include rupees. Confirm purchase/sale in the UI. Check stock does not need confirm.
+
 ## Microphone permission denied
 
 **Cause:** Browser blocked getUserMedia.

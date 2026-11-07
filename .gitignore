@@ -69,6 +69,9 @@ desktop.ini
 .vscode/
 *.swp
 
+# Agent / local verify artifacts
+.ohmyagent/
+
 # Test / cache
 .coverage
 htmlcov/

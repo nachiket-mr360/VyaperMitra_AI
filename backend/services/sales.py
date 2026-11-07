@@ -124,6 +124,7 @@ def create_sale(
     notes: str | None,
     payment_status: str = "unknown",
     transaction_date: str | None = None,
+    conn: sqlite3.Connection | None = None,
 ) -> tuple[dict[str, Any], bool]:
     if not items:
         raise ApiError("Sale requires at least one item", 400, "missing_field")
@@ -138,7 +139,7 @@ def create_sale(
         transaction_date=transaction_date,
     )
 
-    with atomic_connection() as conn:
+    def _run(conn: sqlite3.Connection) -> tuple[dict[str, Any], bool]:
         if idempotency_key:
             existing = conn.execute(
                 "SELECT id, idempotency_hash FROM sales WHERE idempotency_key = ?",
@@ -220,3 +221,8 @@ def create_sale(
                 notes=f"sale:{sale_id}",
             )
         return _sale_payload(conn, sale_id), False
+
+    if conn is not None:
+        return _run(conn)
+    with atomic_connection() as owned:
+        return _run(owned)

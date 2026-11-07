@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchHealth, type HealthResponse } from './api/health'
+import { Dashboard } from './components/Dashboard'
 import { VoicePanel } from './components/VoicePanel'
 
 function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [tab, setTab] = useState<'voice' | 'dashboard'>('dashboard')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -30,14 +32,14 @@ function App() {
   }, [load])
 
   return (
-    <main className="mx-auto flex min-h-svh max-w-lg flex-col gap-6 p-6">
+    <main className="mx-auto flex min-h-svh w-full max-w-6xl min-w-0 flex-col gap-6 overflow-x-hidden px-4 py-6 sm:px-6">
       <header>
         <p className="text-sm font-medium uppercase tracking-wide text-amber-800">
           Your Business, Your Voice
         </p>
         <h1 className="mt-1 text-3xl font-semibold">VyaparMitra</h1>
-        <p className="mt-2 text-lg text-stone-700">
-          Phase 3: Prisma speech-to-text. Sales from voice are not enabled yet.
+        <p className="mt-2 text-base text-stone-700 sm:text-lg">
+          Your shop numbers, from your own records. Voice still needs confirm.
         </p>
       </header>
 
@@ -50,7 +52,7 @@ function App() {
           </p>
         )}
         {health && (
-          <dl className="mt-4 grid gap-2 text-lg">
+          <dl className="mt-4 grid gap-2 break-words text-base sm:text-lg">
             <div>
               <dt className="text-stone-500">Status</dt>
               <dd className="font-medium">{health.ok ? 'Connected' : 'Not ready'}</dd>
@@ -71,7 +73,10 @@ function App() {
             </div>
             <div>
               <dt className="text-stone-500">Database</dt>
-              <dd>{health.database.connected ? 'SQLite connected' : 'Disconnected'}</dd>
+              <dd>
+                {health.database.connected ? 'SQLite connected' : 'Disconnected'}
+                {health.database.demo ? ' · DEMO DATA' : ''}
+              </dd>
             </div>
             <div>
               <dt className="text-stone-500">Gnani</dt>
@@ -90,7 +95,23 @@ function App() {
         </button>
       </section>
 
-      <VoicePanel />
+      <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2">
+        <button
+          type="button"
+          className={`min-h-14 min-w-0 overflow-hidden rounded-xl px-2 text-base sm:text-lg ${tab === 'dashboard' ? 'bg-amber-700 text-white' : 'border border-stone-400'}`}
+          onClick={() => setTab('dashboard')}
+        >
+          Dashboard
+        </button>
+        <button
+          type="button"
+          className={`min-h-14 min-w-0 overflow-hidden rounded-xl px-2 text-base sm:text-lg ${tab === 'voice' ? 'bg-amber-700 text-white' : 'border border-stone-400'}`}
+          onClick={() => setTab('voice')}
+        >
+          Voice
+        </button>
+      </div>
+      {tab === 'dashboard' ? <Dashboard /> : <VoicePanel />}
     </main>
   )
 }

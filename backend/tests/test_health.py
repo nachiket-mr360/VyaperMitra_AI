@@ -9,7 +9,7 @@ def test_health_ok(client):
     assert response.status_code == 200
     assert data["ok"] is True
     assert data["app"] == "VyaparMitra"
-    assert data["phase"] == 3
+    assert data["phase"] == 5
     assert data["timezone"] == "Asia/Kolkata"
     assert data["database"]["connected"] is True
     assert data["gnani"]["integration"] == "prisma_stt"

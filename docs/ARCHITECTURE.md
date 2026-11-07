@@ -13,10 +13,11 @@ Flask
     ├── services/         products, stock, sales, analytics
     ├── db.py             SQLite, migrations, atomic_connection
     ├── migrations/       001_foundation, 002_inventory
-    └── gnani/            Prisma V3 STT (Timbre not started)
+    ├── gnani/            Prisma V3 STT (Timbre not started)
+    └── intents/          Rule parser + confirm executor
 ```
 
-Gnani Prisma V3 STT is called only from Flask (`backend/gnani/stt.py`). The React UI records WAV PCM and posts it to `/api/voice/transcribe`. The browser does not run speech recognition. Transcripts are not applied to sales in Phase 3. The backend remains the source of truth for stock and sales totals.
+Gnani Prisma V3 STT is called only from Flask (`backend/gnani/stt.py`). Transcripts are parsed by a **rule-based** intent layer (`backend/intents/`). There is no documented Evon/LLM key in this project, so no LLM HTTP calls are made. Purchase and sale require confirmation (`pending_voice_actions`) then reuse stock/sales services. The React UI never talks to SQLite.
 
 ## Frontend / backend boundary (mandatory)
 
