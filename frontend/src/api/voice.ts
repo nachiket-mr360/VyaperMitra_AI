@@ -11,11 +11,12 @@ export type TranscribeResponse = {
   language_sent?: string
 }
 
-export async function speakText(text: string, language: string): Promise<Blob> {
+export async function speakText(text: string, language: string, signal?: AbortSignal): Promise<Blob> {
   const res = await fetch('/api/tts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, language }),
+    signal,
   })
   if (!res.ok) {
     throw new Error('Speech playback failed')

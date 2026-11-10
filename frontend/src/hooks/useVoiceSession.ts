@@ -195,6 +195,7 @@ export function useVoiceSession(open: boolean, languageMode: string = 'auto') {
         tts_requests: timings.tts_requests,
         chunks: timings.chunks,
         skipped: timings.skipped,
+        inter_sentence_gap_ms: timings.inter_sentence_gap_ms,
       })
     } catch {
       /* show text even if TTS fails */
