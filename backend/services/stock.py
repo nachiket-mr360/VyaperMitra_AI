@@ -8,7 +8,17 @@ from errors import ApiError
 from money import micro_to_units, paise_to_rupees, rupees_to_paise, units_to_micro
 from timeutil import now_business
 
-ALLOWED_MOVEMENTS = frozenset({"opening", "purchase", "sale", "adjustment"})
+ALLOWED_MOVEMENTS = frozenset(
+    {
+        "opening",
+        "purchase",
+        "sale",
+        "adjustment",
+        "sale_return",
+        "sale_correction",
+        "sale_cancel",
+    }
+)
 
 
 def apply_stock_change(
@@ -19,6 +29,9 @@ def apply_stock_change(
     delta_micro: int,
     unit_cost_paise: int | None,
     notes: str | None,
+    ref_sale_id: int | None = None,
+    ref_line_key: str | None = None,
+    ref_kind: str | None = None,
 ) -> dict[str, Any]:
     if movement_type not in ALLOWED_MOVEMENTS:
         raise ApiError("Invalid movement type", 400, "invalid_value")
@@ -34,10 +47,11 @@ def apply_stock_change(
     cur = conn.execute(
         """
         UPDATE products
-        SET current_stock = current_stock + ?, updated_at = ?
+        SET current_stock = current_stock + ?, updated_at = ?,
+            stock_known = CASE WHEN ? > 0 THEN 1 ELSE stock_known END
         WHERE id = ? AND current_stock + ? >= 0
         """,
-        (delta_micro, now, product_id, delta_micro),
+        (delta_micro, now, delta_micro, product_id, delta_micro),
     )
     if cur.rowcount != 1:
         raise ApiError("Insufficient stock", 409, "insufficient_stock")
@@ -47,10 +61,23 @@ def apply_stock_change(
     new_stock = int(stock_row["current_stock"])
     cur = conn.execute(
         """
-        INSERT INTO stock_movements (product_id, movement_type, quantity, unit_cost, notes, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO stock_movements (
+            product_id, movement_type, quantity, unit_cost, notes, created_at,
+            ref_sale_id, ref_line_key, ref_kind
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (product_id, movement_type, delta_micro, unit_cost_paise, notes, now),
+        (
+            product_id,
+            movement_type,
+            delta_micro,
+            unit_cost_paise,
+            notes,
+            now,
+            ref_sale_id,
+            ref_line_key,
+            ref_kind,
+        ),
     )
     movement = conn.execute(
         "SELECT * FROM stock_movements WHERE id = ?", (cur.lastrowid,)
@@ -137,12 +164,12 @@ def record_adjustment(product_id: int, quantity: Any, notes: str | None) -> dict
 
 def list_stock(*, low_only: bool = False) -> list[dict[str, Any]]:
     sql = """
-        SELECT id, name, unit, current_stock, low_stock_threshold, active
+        SELECT id, name, unit, current_stock, low_stock_threshold, active, stock_known
         FROM products
         WHERE active = 1
     """
     if low_only:
-        sql += " AND current_stock <= low_stock_threshold"
+        sql += " AND stock_known = 1 AND current_stock <= low_stock_threshold"
     sql += " ORDER BY name COLLATE NOCASE"
     with atomic_connection() as conn:
         rows = conn.execute(sql).fetchall()
@@ -151,9 +178,11 @@ def list_stock(*, low_only: bool = False) -> list[dict[str, Any]]:
             item = row_to_dict(r)
             assert item is not None
             item["active"] = bool(item["active"])
-            item["current_stock"] = micro_to_units(int(item["current_stock"]))
+            known = bool(item.get("stock_known", 1))
+            item["stock_known"] = known
+            item["current_stock"] = micro_to_units(int(item["current_stock"])) if known else None
             item["low_stock_threshold"] = micro_to_units(int(item["low_stock_threshold"]))
-            item["low_stock"] = int(r["current_stock"]) <= int(r["low_stock_threshold"])
+            item["low_stock"] = known and int(r["current_stock"]) <= int(r["low_stock_threshold"])
             out.append(item)
         return out
 

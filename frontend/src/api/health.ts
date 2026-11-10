@@ -9,6 +9,8 @@ export type HealthResponse = {
   database: {
     connected: boolean
     demo?: boolean
+    path?: string
+    name?: string
   }
   gnani: {
     enabled: boolean

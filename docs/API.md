@@ -1,4 +1,4 @@
-# VyaparMitra API (Phase 5)
+# VyaparMitra API (Phase 6)
 
 Base URL (local): `http://127.0.0.1:5000`
 
@@ -24,7 +24,9 @@ HTTP: `400` validation, `404` missing, `409` conflict/stock, `413` too large, `5
 
 ## `GET /api/health`
 
-`phase` is `5`. `gnani.integration` is `prisma_stt`. Intents use a rule parser, not an LLM. Dashboard numbers come from SQLite. The API key is never returned.
+`phase` in the running app may be `7` (health constant). Phase 6 planner work is complete in this API. `gnani.integration` is `prisma_stt`. Optional Gemini JSON reasoning (`llm` on health: provider/configured/model only — never the API key). Rule parser remains the fallback. Dashboard numbers come from SQLite.
+
+Planner alerts are **in-app only**. Nothing is sent if the app is closed. Live spoken Gnani STT of planner phrases is not claimed here.
 
 ### `GET /api/analytics/dashboard?from=YYYY-MM-DD&to=YYYY-MM-DD`
 
@@ -36,7 +38,7 @@ Also: `GET /api/analytics/sales/yesterday`.
 
 ## Voice intents
 
-Prisma STT only returns text. Flask maps text with a **rule-based** parser (`intents/parser.py`). No Gnani Evon/LLM call is made.
+Prisma STT only returns text. Flask may call Gemini for structured intent JSON (`LLM_PROVIDER=gemini`), then validates it. Gemini never writes SQLite. Mutations still need confirm. Unknown spoken names can become a product **after confirm**, with curated EN/HI/KN/MR aliases. `stock_known` is false until a purchase/opening; unknown stock is not shown as zero and is not decremented on sale. If Gemini is down or returns `unknown`, the **rule-based** parser is used. No Gnani Evon.
 
 ### `POST /api/intents/parse`
 
@@ -231,6 +233,25 @@ All of: sale row, sale items, stock decrement, ledger `sale` movement — one SQ
 Optional `?date=YYYY-MM-DD` (Asia/Kolkata calendar date).
 
 ### `GET /api/sales/<id>`
+
+---
+
+## Planner (reminders and notes)
+
+Dates and `due_at` use **Asia/Kolkata**. Recurrence: `none` | `daily` | `weekly` | `monthly`. Completing a monthly reminder keeps the intended `month_day` (e.g. 31 Jan → 28/29 Feb → 31 Mar).
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/api/reminders/briefing` | Today, overdue, upcoming (max 8; `upcoming_total` / `upcoming_limit`), notes preview, `notify_note` |
+| GET | `/api/reminders` | Optional `?status=open\|completed\|cancelled` |
+| POST | `/api/reminders` | `{ title, due_date, due_time?, recurrence? }` |
+| POST | `/api/reminders/<id>/complete` | One-shot completes; recurring rows stay open and move `due_date` |
+| DELETE | `/api/reminders/<id>` | |
+| GET | `/api/notes` | Optional `?q=` case-insensitive ASCII search; Unicode matched with Python `casefold`. Empty `q` returns all |
+| POST | `/api/notes` | `{ body }` exact text stored |
+| DELETE | `/api/notes/<id>` | |
+
+Voice: `create_reminder`, `complete_reminder`, `delete_reminder`, `create_note`, `delete_note` need confirm. `list_reminders` / `list_notes` run immediately. Kannada/Marathi list and delete cues are supported (keyword parser). Ambiguous delete asks which item.
 
 ---
 

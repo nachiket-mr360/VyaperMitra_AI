@@ -210,7 +210,9 @@ export function Dashboard() {
                     >
                       <span className="min-w-0 truncate font-medium text-red-900">{p.name}</span>
                       <span className="shrink-0 rounded-full bg-red-800 px-3 py-1 text-sm text-white">
-                        {p.current_stock} {p.unit}
+                        {p.stock_known === false || p.current_stock == null
+                          ? 'Not counted'
+                          : `${p.current_stock} ${p.unit}`}
                       </span>
                     </li>
                   ))}
@@ -237,7 +239,9 @@ export function Dashboard() {
                       <tr key={p.id} className="border-b border-stone-100">
                         <td className="py-3 pr-3">{p.name}</td>
                         <td className="py-3 pr-3 whitespace-nowrap">
-                          {p.current_stock} {p.unit}
+                          {p.stock_known === false || p.current_stock == null
+                          ? 'Not counted'
+                          : `${p.current_stock} ${p.unit}`}
                         </td>
                         <td className="py-3">
                           {p.low_stock ? (

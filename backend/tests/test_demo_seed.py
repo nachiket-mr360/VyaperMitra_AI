@@ -12,7 +12,7 @@ from timeutil import business_date_str
 BACKEND = Path(__file__).resolve().parents[1]
 
 
-def test_demo_env_ignores_shop_database_path(tmp_path):
+def test_demo_env_does_not_switch_shop_database(tmp_path):
     shop = tmp_path / "vyaparmitra.db"
     script = (
         "import os\n"
@@ -21,9 +21,9 @@ def test_demo_env_ignores_shop_database_path(tmp_path):
         "os.environ['FLASK_DEBUG']='1'\n"
         "from config import Config\n"
         "p=Config.DATABASE_PATH.replace('\\\\','/').lower()\n"
-        "assert Config.DEMO_MODE\n"
-        "assert p.endswith('vyaparmitra_demo.db')\n"
-        "assert not p.endswith('/vyaparmitra.db')\n"
+        "assert Config.DEMO_MODE is False\n"
+        "assert p.endswith('vyaparmitra.db')\n"
+        "assert 'vyaparmitra_demo.db' not in p\n"
         "print('ok')\n"
     )
     out = subprocess.check_output([sys.executable, "-c", script], cwd=BACKEND, text=True)
@@ -50,7 +50,6 @@ def test_seed_demo_and_dashboard_match(tmp_path, monkeypatch):
     assert db.resolve() != shop.resolve()
 
     monkeypatch.setattr("config.Config.DATABASE_PATH", str(db))
-    monkeypatch.setattr("config.Config.DEMO_MODE", True)
     from app import create_app
 
     app = create_app()

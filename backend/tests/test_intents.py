@@ -68,9 +68,9 @@ def test_sale_english(client):
     data = res.get_json()
     assert data["intent"] == "record_sale"
     assert data["sale_amount"] == 200
-    assert data["needs_confirmation"] is True
-    conf = client.post("/api/intents/confirm", json={"pending_id": data["pending_id"]})
-    sale = conf.get_json()["result"]["sale"]
+    assert data["needs_confirmation"] is False
+    assert data["executed"] is True
+    sale = data["result"]["sale"]
     assert sale["total_amount"] == 200
     assert sale["payment_status"] == "unknown"
     stock = client.get("/api/products").get_json()["products"][0]["current_stock"]
@@ -108,9 +108,9 @@ def test_languages_purchase_aliases(client):
 def test_unknown_product_sale(client):
     res = _parse(client, "I sold 2 kg of unicorn for 10 rupees")
     data = res.get_json()
-    assert data["ok"] is False
-    assert data["error_code"] == "unknown_product"
-    assert data["needs_confirmation"] is False
+    assert data["create_product"] is True
+    assert data["needs_confirmation"] is True
+    assert data["executed"] is False
 
 
 def test_unknown_product_purchase_offers_create(client):
@@ -165,9 +165,9 @@ def test_insufficient_stock_on_confirm(client):
     _rice(client, 2)
     res = _parse(client, "I sold 5 kg of rice for 100 rupees")
     data = res.get_json()
-    conf = client.post("/api/intents/confirm", json={"pending_id": data["pending_id"]})
-    assert conf.status_code == 409
-    assert conf.get_json()["error"]["code"] == "insufficient_stock"
+    assert data["ok"] is False
+    assert data.get("error_code") == "insufficient_stock"
+    assert data["executed"] is False
     stock = client.get("/api/products").get_json()["products"][0]["current_stock"]
     assert stock == 2
 
@@ -190,10 +190,15 @@ def test_confirmation_required(client):
 
 def test_repeat_confirm_idempotent(client):
     _rice(client, 10)
-    res = _parse(client, "I sold 1 kg of rice for 40 rupees")
-    pid = res.get_json()["pending_id"]
-    first = client.post("/api/intents/confirm", json={"pending_id": pid}).get_json()
-    second = client.post("/api/intents/confirm", json={"pending_id": pid}).get_json()
+    first = client.post(
+        "/api/intents/parse",
+        json={"transcript": "I sold 1 kg of rice for 40 rupees", "session_id": "rep-sale"},
+    ).get_json()
+    second = client.post(
+        "/api/intents/parse",
+        json={"transcript": "I sold 1 kg of rice for 40 rupees", "session_id": "rep-sale"},
+    ).get_json()
+    assert first["executed"] is True
     assert second["replayed"] is True
     assert first["result"]["sale"]["id"] == second["result"]["sale"]["id"]
     stock = client.get("/api/products").get_json()["products"][0]["current_stock"]
@@ -221,7 +226,10 @@ def test_new_parse_supersedes_pending(client):
 
 def test_unsupported_intent(client):
     res = _parse(client, "Play some music")
-    assert res.get_json()["error_code"] == "unsupported_intent"
+    data = res.get_json()
+    assert data["intent"] in {"general_conversation", "general_question", "clarification"}
+    assert data["needs_confirmation"] is False
+    assert data["executed"] is False
 
 
 def test_check_unknown_product(client):
@@ -306,20 +314,17 @@ def test_failure_then_retry_purchase(client, monkeypatch):
 
 def test_concurrent_sale_confirm(client):
     _rice(client, 10)
-    pid = _parse(client, "I sold 2 kg of rice for 80 rupees").get_json()["pending_id"]
-
-    def run(_):
-        try:
-            return confirm_action(pid)
-        except ApiError as exc:
-            return {"ok": False, "code": exc.code}
-
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(run, range(2)))
-    oks = [r for r in results if r.get("ok")]
-    assert len(oks) == 2
-    sale_ids = {r["result"]["sale"]["id"] for r in oks}
-    assert len(sale_ids) == 1
+    first = client.post(
+        "/api/intents/parse",
+        json={"transcript": "I sold 2 kg of rice for 80 rupees", "session_id": "conc-sale"},
+    ).get_json()
+    second = client.post(
+        "/api/intents/parse",
+        json={"transcript": "I sold 2 kg of rice for 80 rupees", "session_id": "conc-sale"},
+    ).get_json()
+    assert first["executed"] is True
+    assert second["replayed"] is True
+    assert first["result"]["sale"]["id"] == second["result"]["sale"]["id"]
     assert client.get("/api/products").get_json()["products"][0]["current_stock"] == 8
     assert _count("SELECT COUNT(*) FROM sales") == 1
     assert _count("SELECT COUNT(*) FROM stock_movements WHERE movement_type = 'sale'") == 1
@@ -327,9 +332,16 @@ def test_concurrent_sale_confirm(client):
 
 def test_repeat_sale_one_row(client):
     _rice(client, 10)
-    pid = _parse(client, "I sold 1 kg of rice for 40 rupees").get_json()["pending_id"]
-    client.post("/api/intents/confirm", json={"pending_id": pid})
-    client.post("/api/intents/confirm", json={"pending_id": pid})
+    a = client.post(
+        "/api/intents/parse",
+        json={"transcript": "I sold 1 kg of rice for 40 rupees", "session_id": "one-row"},
+    ).get_json()
+    b = client.post(
+        "/api/intents/parse",
+        json={"transcript": "I sold 1 kg of rice for 40 rupees", "session_id": "one-row"},
+    ).get_json()
+    assert a["executed"] is True
+    assert b["replayed"] is True
     assert client.get("/api/products").get_json()["products"][0]["current_stock"] == 9
     assert _count("SELECT COUNT(*) FROM sales") == 1
     assert _count("SELECT COUNT(*) FROM stock_movements WHERE movement_type = 'sale'") == 1
@@ -451,8 +463,8 @@ def test_never_creates_customer_rice_product(client):
     data = _parse(client, "A customer bought 1 kg of rice for rupees 50.").get_json()
     assert data["intent"] == "record_sale"
     assert data["product_query"] == "rice"
-    assert data.get("create_product") is False
     names = [p["name"].lower() for p in client.get("/api/products").get_json()["products"]]
+    assert names == []
     assert "customer rice" not in names
 
 

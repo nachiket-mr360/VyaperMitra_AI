@@ -5,3 +5,4 @@ tzdata>=2025.3
 pytest==8.3.4
 requests==2.32.3
 mutagen==1.47.0
+google-genai>=1.0.0

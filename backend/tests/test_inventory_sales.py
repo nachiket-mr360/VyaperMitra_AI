@@ -41,12 +41,12 @@ def test_alias_create_and_duplicate(client):
     product = _create_rice(client)
     res = client.post(
         f"/api/products/{product['id']}/aliases",
-        json={"alias": "chawal", "language": "hi"},
+        json={"alias": "bhaat", "language": "hi"},
     )
     assert res.status_code == 201
     dup = client.post(
         f"/api/products/{product['id']}/aliases",
-        json={"alias": "Chawal"},
+        json={"alias": "Bhaat"},
     )
     assert dup.status_code == 409
 

@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiClientError } from '../api/client'
 import { cancelIntent, confirmIntent, parseIntent, type IntentParseResponse } from '../api/intent'
-import { transcribeAudio } from '../api/voice'
+import { speakText, transcribeAudio } from '../api/voice'
+import { maybeNotifyShopMutation } from '../lib/shopRecords'
+import { ttsLanguage } from '../lib/ttsLanguage'
+import { applyTtsPlayback } from '../lib/ttsPlayback'
 import { encodeWav } from '../audio/wav'
 
 const LANGUAGES = [
@@ -31,11 +34,14 @@ export function VoicePanel() {
   const [result, setResult] = useState<Result | null>(null)
   const [intent, setIntent] = useState<IntentParseResponse | null>(null)
   const [actionMsg, setActionMsg] = useState<string | null>(null)
+  const [playing, setPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const recRef = useRef<{
     stop: () => Promise<Blob>
   } | null>(null)
   const timerRef = useRef<number | null>(null)
   const submitting = useRef(false)
+  const sessionIdRef = useRef(`vp-${crypto.randomUUID()}`)
 
   useEffect(() => {
     return () => {
@@ -138,7 +144,7 @@ export function VoicePanel() {
         request_id: data.request_id,
         processing_time: data.processing_time,
       })
-      const parsed = await parseIntent(data.transcript)
+      const parsed = await parseIntent(data.transcript, sessionIdRef.current)
       setIntent(parsed)
     } catch (err) {
       if (err instanceof ApiClientError) {
@@ -263,11 +269,77 @@ export function VoicePanel() {
               {intent.message}
             </p>
           )}
-          {!intent.error_code && <p>{intent.message}</p>}
+          {intent.reply_text && (
+            <p className="rounded-xl bg-amber-50 p-4 text-xl font-medium leading-snug text-stone-900" data-testid="reply-text">
+              {intent.reply_text}
+            </p>
+          )}
+          {Array.isArray((intent.result as { by_product?: unknown } | null)?.by_product) &&
+            ((intent.result as { by_product: Array<{ name?: string; quantity?: number; unit?: string; amount?: number }> }).by_product.length >
+              0) && (
+              <ul className="mt-1 list-disc pl-5 text-lg" data-testid="product-breakdown">
+                {(
+                  intent.result as {
+                    by_product: Array<{ name?: string; quantity?: number; unit?: string; amount?: number }>
+                  }
+                ).by_product.map((row) => (
+                  <li key={`${row.name}-${row.amount}`}>
+                    {row.name}: {row.quantity} {row.unit}, ₹{row.amount}
+                  </li>
+                ))}
+              </ul>
+            )}
+          {!intent.reply_text && !intent.error_code && <p>{intent.message}</p>}
+          {intent.reply_text && (
+            <button
+              type="button"
+              className="min-h-12 rounded-xl border border-stone-400 px-4 text-lg"
+              disabled={busy}
+              onClick={() => {
+                void (async () => {
+                  if (playing && audioRef.current) {
+                    audioRef.current.pause()
+                    audioRef.current = null
+                    setPlaying(false)
+                    return
+                  }
+                  setBusy(true)
+                  try {
+                    const blob = await speakText(
+                      intent.reply_text as string,
+                      ttsLanguage(intent.reply_language),
+                    )
+                    const url = URL.createObjectURL(blob)
+                    const audio = new Audio(url)
+                    applyTtsPlayback(audio)
+                    audioRef.current = audio
+                    audio.onended = () => {
+                      setPlaying(false)
+                      URL.revokeObjectURL(url)
+                    }
+                    setPlaying(true)
+                    await audio.play()
+                  } catch {
+                    setError('Could not play audio. The written answer is still above.')
+                  } finally {
+                    setBusy(false)
+                  }
+                })()
+              }}
+            >
+              {playing ? 'Stop' : 'Play answer'}
+            </button>
+          )}
+          {intent.create_product && intent.suggested_aliases && intent.suggested_aliases.length > 0 && (
+            <p className="text-stone-600">
+              Also known as: {intent.suggested_aliases.map((a) => a.alias).join(', ')}
+            </p>
+          )}
           {intent.executed && intent.result != null && (
-            <pre className="overflow-auto rounded-lg bg-stone-100 p-3 text-base">
-              {JSON.stringify(intent.result, null, 2)}
-            </pre>
+            <details className="rounded-lg bg-stone-100 p-3 text-base">
+              <summary className="cursor-pointer text-stone-600">Details</summary>
+              <pre className="mt-2 overflow-auto">{JSON.stringify(intent.result, null, 2)}</pre>
+            </details>
           )}
           {intent.needs_confirmation && intent.pending_id && (
             <div className="mt-2 flex flex-col gap-2">
@@ -280,9 +352,14 @@ export function VoicePanel() {
                     setBusy(true)
                     setError(null)
                     try {
-                      const done = await confirmIntent(intent.pending_id as string)
+                      const done = await confirmIntent(intent.pending_id as string, sessionIdRef.current)
                       setActionMsg(done.message)
                       setIntent({ ...intent, needs_confirmation: false, executed: true, result: done.result })
+                      maybeNotifyShopMutation({
+                        executed: done.executed,
+                        intent: done.intent,
+                        pendingIntent: intent.intent,
+                      })
                     } catch (err) {
                       setError(err instanceof ApiClientError ? err.message : 'Confirm failed.')
                     } finally {

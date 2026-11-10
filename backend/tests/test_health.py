@@ -9,11 +9,15 @@ def test_health_ok(client):
     assert response.status_code == 200
     assert data["ok"] is True
     assert data["app"] == "VyaparMitra"
-    assert data["phase"] == 5
+    assert data["phase"] == 7
     assert data["timezone"] == "Asia/Kolkata"
     assert data["database"]["connected"] is True
+    assert data["database"]["demo"] is False
+    assert "name" in data["database"]
     assert data["gnani"]["integration"] == "prisma_stt"
     assert "GNANI_API_KEY" not in str(data)
+    assert "GEMINI_API_KEY" not in str(data)
+    assert "llm" in data
 
 
 def test_unknown_route_json_error(client):

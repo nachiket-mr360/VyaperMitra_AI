@@ -73,6 +73,36 @@ export async function apiPostJson<T>(path: string, body: unknown): Promise<T> {
   return parsed as T
 }
 
+async function jsonMethod<T>(method: string, path: string, body?: unknown): Promise<T> {
+  let res: Response
+  try {
+    res = await fetch(path, {
+      method,
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiClientError(
+      'Cannot reach the VyaparMitra server. Check that the backend is running.',
+      0,
+      'network_error',
+    )
+  }
+  const parsed = await parseJson(res)
+  if (!res.ok) {
+    throw parseError(res, parsed)
+  }
+  return parsed as T
+}
+
+export function apiPatchJson<T>(path: string, body: unknown) {
+  return jsonMethod<T>('PATCH', path, body)
+}
+
+export function apiDelete<T>(path: string) {
+  return jsonMethod<T>('DELETE', path)
+}
+
 export async function apiPostForm<T>(path: string, form: FormData): Promise<T> {
   let res: Response
   try {

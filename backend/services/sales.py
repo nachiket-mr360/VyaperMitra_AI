@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+import uuid
 from typing import Any
 
 from db import atomic_connection, row_to_dict
@@ -77,20 +78,21 @@ def _sale_payload(conn: sqlite3.Connection, sale_id: int) -> dict[str, Any]:
 
 
 def get_sale(sale_id: int) -> dict[str, Any]:
-    with atomic_connection() as conn:
-        return _sale_payload(conn, sale_id)
+    from services.sale_lifecycle import get_sale_detail
+
+    return get_sale_detail(sale_id)
 
 
-def list_sales(*, on_date: str | None = None) -> list[dict[str, Any]]:
-    with atomic_connection() as conn:
-        if on_date:
-            rows = conn.execute(
-                "SELECT id FROM sales WHERE transaction_date = ? ORDER BY id DESC",
-                (on_date,),
-            ).fetchall()
-        else:
-            rows = conn.execute("SELECT id FROM sales ORDER BY id DESC LIMIT 200").fetchall()
-        return [_sale_payload(conn, int(r["id"])) for r in rows]
+def list_sales(
+    *,
+    on_date: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    sale_id: int | None = None,
+) -> list[dict[str, Any]]:
+    from services.sale_lifecycle import list_sales as _list
+
+    return _list(on_date=on_date, date_from=date_from, date_to=date_to, sale_id=sale_id)
 
 
 def _normalize_items(raw_items: list[dict[str, Any]]) -> list[dict[str, int]]:
@@ -153,7 +155,9 @@ def create_sale(
                         409,
                         "idempotency_conflict",
                     )
-                return _sale_payload(conn, int(existing["id"])), True
+                from services.sale_lifecycle import sale_detail
+
+                return sale_detail(conn, int(existing["id"])), True
 
         now = now_business()
         day = transaction_date or business_date_str(now)
@@ -162,14 +166,14 @@ def create_sale(
 
         for item in normalized:
             product = conn.execute(
-                "SELECT id, current_stock, active FROM products WHERE id = ?",
+                "SELECT id, current_stock, active, stock_known FROM products WHERE id = ?",
                 (item["product_id"],),
             ).fetchone()
             if product is None:
                 raise ApiError(f"Product {item['product_id']} not found", 404, "not_found")
             if not product["active"]:
                 raise ApiError("Cannot sell an inactive product", 409, "inactive_product")
-            if int(product["current_stock"]) < item["quantity_micro"]:
+            if bool(product["stock_known"]) and int(product["current_stock"]) < item["quantity_micro"]:
                 raise ApiError("Insufficient stock", 409, "insufficient_stock")
 
         try:
@@ -194,12 +198,14 @@ def create_sale(
                         409,
                         "idempotency_conflict",
                     ) from None
-                return _sale_payload(conn, int(again["id"])), True
+                from services.sale_lifecycle import sale_detail
+
+                return sale_detail(conn, int(again["id"])), True
             raise ApiError("Could not record sale", 409, "conflict") from None
 
         sale_id = int(cur.lastrowid)
         for item in normalized:
-            conn.execute(
+            cur_item = conn.execute(
                 """
                 INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, line_total)
                 VALUES (?, ?, ?, ?, ?)
@@ -212,15 +218,30 @@ def create_sale(
                     item["line_total_paise"],
                 ),
             )
-            apply_stock_change(
-                conn,
-                item["product_id"],
-                movement_type="sale",
-                delta_micro=-item["quantity_micro"],
-                unit_cost_paise=None,
-                notes=f"sale:{sale_id}",
+            item_id = int(cur_item.lastrowid)
+            conn.execute(
+                """
+                INSERT INTO sale_lines (sale_id, line_key, origin_sale_item_id, added, removed, created_at)
+                VALUES (?, ?, ?, 0, 0, ?)
+                """,
+                (sale_id, str(uuid.uuid4()), item_id, created),
             )
-        return _sale_payload(conn, sale_id), False
+            known = conn.execute(
+                "SELECT stock_known FROM products WHERE id = ?",
+                (item["product_id"],),
+            ).fetchone()
+            if known and int(known["stock_known"]):
+                apply_stock_change(
+                    conn,
+                    item["product_id"],
+                    movement_type="sale",
+                    delta_micro=-item["quantity_micro"],
+                    unit_cost_paise=None,
+                    notes=f"sale:{sale_id}",
+                )
+        from services.sale_lifecycle import sale_detail
+
+        return sale_detail(conn, sale_id), False
 
     if conn is not None:
         return _run(conn)

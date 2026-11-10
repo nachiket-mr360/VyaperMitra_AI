@@ -14,6 +14,7 @@ class ParseDraft:
     missing: list[str] = field(default_factory=list)
     error_code: str | None = None
     message: str = ""
+    allow_create_product: bool = True
 
 
 @dataclass

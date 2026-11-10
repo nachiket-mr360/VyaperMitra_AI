@@ -17,14 +17,23 @@ export type IntentParseResponse = {
   error_code: string | null
   executed: boolean
   result: unknown
-  product?: { name: string; unit: string; current_stock: number }
+  reply_text?: string
+  reply_language?: string
+  product?: { name: string; unit: string; current_stock: number | null; stock_known?: boolean }
+  suggested_aliases?: Array<{ alias: string; language: string }>
+  canonical_name?: string
+  visualization?: unknown
 }
 
-export function parseIntent(transcript: string) {
-  return apiPostJson<IntentParseResponse>('/api/intents/parse', { transcript })
+export function parseIntent(transcript: string, sessionId?: string, languageMode?: string) {
+  return apiPostJson<IntentParseResponse>('/api/intents/parse', {
+    transcript,
+    ...(sessionId ? { session_id: sessionId } : {}),
+    ...(languageMode ? { language_mode: languageMode } : {}),
+  })
 }
 
-export function confirmIntent(pendingId: string) {
+export function confirmIntent(pendingId: string, sessionId?: string) {
   return apiPostJson<{
     ok: boolean
     executed: boolean
@@ -32,7 +41,10 @@ export function confirmIntent(pendingId: string) {
     message: string
     result: unknown
     intent: string
-  }>('/api/intents/confirm', { pending_id: pendingId })
+  }>('/api/intents/confirm', {
+    pending_id: pendingId,
+    ...(sessionId ? { session_id: sessionId } : {}),
+  })
 }
 
 export function cancelIntent(pendingId: string) {

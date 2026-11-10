@@ -12,7 +12,8 @@ export type StockRow = {
   id: number
   name: string
   unit: string
-  current_stock: number
+  current_stock: number | null
+  stock_known?: boolean
   low_stock_threshold?: number
   low_stock?: boolean
 }

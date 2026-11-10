@@ -7,6 +7,7 @@ from db import atomic_connection, row_to_dict
 from errors import ApiError
 from money import micro_to_units, rupees_to_paise, units_to_micro
 from timeutil import now_business
+from catalog import attach_suggested_aliases, canonical_name
 from validate import normalize_text, require_unit
 
 
@@ -18,9 +19,11 @@ def product_dict(row: sqlite3.Row) -> dict[str, Any]:
     data = row_to_dict(row)
     assert data is not None
     data["active"] = bool(data["active"])
-    data["current_stock"] = micro_to_units(int(data["current_stock"]))
+    known = bool(data.get("stock_known", 1))
+    data["stock_known"] = known
+    data["current_stock"] = micro_to_units(int(data["current_stock"])) if known else None
     data["low_stock_threshold"] = micro_to_units(int(data["low_stock_threshold"]))
-    data["low_stock"] = int(row["current_stock"]) <= int(row["low_stock_threshold"])
+    data["low_stock"] = bool(known) and int(row["current_stock"]) <= int(row["low_stock_threshold"])
     return data
 
 
@@ -40,12 +43,14 @@ def create_product(
     *,
     conn: sqlite3.Connection | None = None,
 ) -> dict[str, Any]:
-    normalized = normalize_text(name)
+    display = canonical_name(name)
+    normalized = normalize_text(display)
     unit_n = require_unit(unit)
     threshold_micro = units_to_micro(low_stock_threshold, "low_stock_threshold")
     if threshold_micro < 0:
         raise ApiError("low_stock_threshold cannot be negative", 400, "invalid_value")
     now = _now()
+    known = 1 if opening_stock is not None else 0
 
     def _run(conn: sqlite3.Connection) -> dict[str, Any]:
         exists = conn.execute(
@@ -63,12 +68,13 @@ def create_product(
             """
             INSERT INTO products (
                 name, normalized_name, unit, current_stock, low_stock_threshold,
-                active, created_at, updated_at
-            ) VALUES (?, ?, ?, 0, ?, 1, ?, ?)
+                active, created_at, updated_at, stock_known
+            ) VALUES (?, ?, ?, 0, ?, 1, ?, ?, ?)
             """,
-            (name.strip(), normalized, unit_n, threshold_micro, now, now),
+            (display, normalized, unit_n, threshold_micro, now, now, known),
         )
         product_id = int(cur.lastrowid)
+        attach_suggested_aliases(conn, product_id, name)
         if opening_stock is not None:
             from services.stock import apply_stock_change
 

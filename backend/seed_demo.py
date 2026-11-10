@@ -34,7 +34,6 @@ def seed_demo_database(db_path: Path, *, reset: bool) -> dict:
     import config as config_mod
 
     config_mod.Config.DATABASE_PATH = str(db_path.resolve())
-    config_mod.Config.DEMO_MODE = True
     from app import create_app
     from db import atomic_connection
     from services import products as product_service
@@ -175,7 +174,7 @@ def main() -> None:
     args = parser.parse_args()
     info = seed_demo_database(Path(args.db), reset=args.reset)
     print("demo_seeded", info)
-    print("Run Flask with VYAPARMITRA_DEMO=1 (do not point DATABASE_PATH at vyaparmitra.db).")
+    print("Isolated seed only. Do not point Flask DATABASE_PATH at this file for shop use.")
 
 
 if __name__ == "__main__":

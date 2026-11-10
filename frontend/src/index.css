@@ -1,21 +1,144 @@
 @import "tailwindcss";
 
+:root {
+  --vm-bg: #f3f1ec;
+  --vm-ink: #12151c;
+  --vm-muted: #5c6474;
+  --vm-accent: #0f766e;
+  --vm-gold: #c4a574;
+  --vm-sidebar: #10151f;
+}
+
 html,
 body,
 #root {
+  height: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow: hidden;
+}
+
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   min-height: 100svh;
-  background: #f4f1ea;
-  color: #1a1714;
-  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(15, 118, 110, 0.08), transparent 50%),
+    radial-gradient(900px 500px at 100% 0%, rgba(196, 165, 116, 0.12), transparent 45%),
+    var(--vm-bg);
+  color: var(--vm-ink);
+  font-family: "DM Sans", system-ui, "Segoe UI", sans-serif;
+}
+
+h1,
+h2,
+.font-display {
+  font-family: "Fraunces", Georgia, serif;
 }
 
 .recharts-wrapper,
 .recharts-surface {
   max-width: 100% !important;
+}
+
+@keyframes vm-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes vm-pulse-ring {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes vm-orb {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes vm-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.vm-enter {
+  animation: vm-fade-up 0.45s ease both;
+}
+
+.vm-enter-2 {
+  animation: vm-fade-up 0.5s ease 0.06s both;
+}
+
+.vm-enter-3 {
+  animation: vm-fade-up 0.55s ease 0.12s both;
+}
+
+.vm-glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 10px 40px rgba(16, 21, 31, 0.06);
+}
+
+.vm-orb-idle {
+  animation: vm-orb 3.2s ease-in-out infinite;
+}
+
+.vm-fab-ring::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 9999px;
+  border: 2px solid rgba(15, 118, 110, 0.35);
+  animation: vm-pulse-ring 2.4s ease-out infinite;
+}
+
+.vm-main-scroll {
+  scroll-padding-bottom: 7.5rem;
+}
+
+@media (min-width: 1024px) {
+  .vm-main-scroll {
+    scroll-padding-bottom: 6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vm-enter,
+  .vm-enter-2,
+  .vm-enter-3,
+  .vm-orb-idle,
+  .vm-fab-ring::after {
+    animation: none !important;
+  }
 }

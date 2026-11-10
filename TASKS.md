@@ -27,11 +27,21 @@ Project name is **VyaparMitra** everywhere. Timezone: **Asia/Kolkata**. Stock up
 
 - [x] Dashboard API + shopkeeper UI (sales, stock, trends)
 
+## Completed — Phase 6
+
+- [x] Reminders, notes, daily briefing (in-app only)
+- [x] Voice create/complete/delete with pending confirmation
+- [x] Recurring reminders (daily / weekly / monthly, intended month-day)
+- [x] Note search (EN/HI/KN/MR text)
+- [x] Planner Today / Reminders / Notes UI
+
+Notifications are **in-app only**. They do not run when the app or browser tab is closed. There is no OS push. Live Gnani STT of reminder/note phrases was **not** verified in this phase (rule parser + isolated API tests only).
+
 ## Pending — later
 
 - [ ] Gnani Timbre TTS (real API only)
 - [ ] Analytics dashboard UI
-- [ ] Reminders, briefing, notifications
+- [ ] Background / OS push notifications (out of scope for Phase 6)
 - [ ] CSV / Excel / PDF export
 - [ ] Authentication before public deploy
 
