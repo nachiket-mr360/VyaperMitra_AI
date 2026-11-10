@@ -45,9 +45,13 @@ def production_mode() -> bool:
 
 
 def require_secure_secret(secret: str) -> None:
-    if production_mode() and secret.strip().lower() in INSECURE_SECRET_KEYS:
+    normalized = secret.strip().lower()
+    if production_mode() and (
+        normalized in INSECURE_SECRET_KEYS or len(secret.strip()) < 32
+    ):
         raise RuntimeError(
-            "Refusing to start: set a strong SECRET_KEY; insecure defaults are not allowed in production."
+            "Refusing to start: set a strong SECRET_KEY of at least 32 characters; "
+            "insecure defaults are not allowed in production."
         )
 
 

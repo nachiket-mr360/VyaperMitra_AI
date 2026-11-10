@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import logging
-
+import os
 from pathlib import Path
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 
 from config import Config, require_secure_secret
@@ -21,6 +21,30 @@ APP_NAME = "VyaparMitra"
 APP_PHASE = 7
 
 logger = logging.getLogger("vyaparmitra")
+
+
+def _register_frontend(app: Flask) -> None:
+    """Serve the Vite production build when FRONTEND_DIST is set. Dev/tests skip this."""
+    raw = (os.getenv("FRONTEND_DIST") or "").strip()
+    if not raw:
+        return
+    dist = Path(raw)
+    if not dist.is_dir():
+        logger.warning("FRONTEND_DIST is set but missing: %s", dist)
+        return
+
+    @app.get("/")
+    def frontend_index():
+        return send_from_directory(dist, "index.html")
+
+    @app.get("/<path:path>")
+    def frontend_assets(path: str):
+        if path.startswith("api/"):
+            return jsonify({"ok": False, "error": {"code": "not_found", "message": "Not found"}}), 404
+        target = dist / path
+        if target.is_file():
+            return send_from_directory(dist, path)
+        return send_from_directory(dist, "index.html")
 
 
 def create_app() -> Flask:
@@ -82,6 +106,7 @@ def create_app() -> Flask:
         }
         return jsonify(payload), 200 if db_ok else 503
 
+    _register_frontend(app)
     return app
 
 
